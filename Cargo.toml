@@ -3,10 +3,15 @@ name = "oci-registry-client"
 version = "0.1.0"
 authors = ["Erle Carrara <carrara.erle@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "A async client for Docker Registry HTTP V2 protocol."
+homepage = "https://github.com/ecarrara/oci-registry-client"
+repository = "https://github.com/ecarrara/oci-registry-client"
+readme = "README.md"
 
 [dependencies]
-bytes = { version = "0.5" }
-reqwest = { version = "0.10", features = ["json"] }
-tokio = { version = "0.2", features = ["rt-core", "macros"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
+bytes = { version = "^0.5" }
+reqwest = { version = "^0.10", features = ["json"] }
+tokio = { version = "^0.2", features = ["rt-core", "macros"] }
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = { version = "^1.0" }
