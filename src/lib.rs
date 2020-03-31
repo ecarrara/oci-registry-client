@@ -180,10 +180,7 @@ impl DockerRegistryClientV2 {
 
         match response.status() {
             StatusCode::OK => Ok(Blob::from(response)),
-            _ => {
-                println!("{:?}", response.status());
-                Err(ErrorResponse::APIError(response.json::<ErrorList>().await?))
-            }
+            _ => Err(ErrorResponse::APIError(response.json::<ErrorList>().await?)),
         }
     }
 
@@ -203,7 +200,6 @@ impl DockerRegistryClientV2 {
         }
 
         let response = request.send().await?;
-        println!("{}: {:?}", url, response.status());
 
         match response.status() {
             StatusCode::OK => Ok(response.json::<T>().await?),
