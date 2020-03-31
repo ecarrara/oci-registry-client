@@ -41,7 +41,7 @@ pub mod manifest;
 
 use blob::Blob;
 use errors::{ErrorList, ErrorResponse};
-use manifest::{Manifest, ManifestList};
+use manifest::{Image, Manifest, ManifestList};
 use reqwest::{Method, StatusCode};
 
 static USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -67,6 +67,7 @@ const MEDIA_TYPE_JSON: &str = "applicatin/json";
 const MEDIA_TYPE_MANIFEST_LIST_V2: &str =
     "application/vnd.docker.distribution.manifest.list.v2+json";
 const MEDIA_TYPE_MANIFEST_V2: &str = "application/vnd.docker.distribution.manifest.v2+json";
+const MEDIA_TYPE_IMAGE_CONFIG: &str = "application/vnd.docker.container.image.v1+json";
 
 impl DockerRegistryClientV2 {
     /// Returns a new `DockerRegistryClientV2`.
@@ -157,6 +158,13 @@ impl DockerRegistryClientV2 {
     pub async fn manifest(&self, image: &str, reference: &str) -> Result<Manifest, ErrorResponse> {
         let url = format!("{}/v2/{}/manifests/{}", &self.api_url, image, reference);
         self.request(Method::GET, &url, MEDIA_TYPE_MANIFEST_V2)
+            .await
+    }
+
+    /// Get the container config.
+    pub async fn config(&self, image: &str, reference: &str) -> Result<Image, ErrorResponse> {
+        let url = format!("{}/v2/{}/blobs/{}", &self.api_url, image, reference);
+        self.request(Method::GET, &url, MEDIA_TYPE_IMAGE_CONFIG)
             .await
     }
 

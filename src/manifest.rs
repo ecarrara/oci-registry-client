@@ -3,6 +3,8 @@
 //! See [Imag Manifest V2, Schema 2](https://docs.docker.com/registry/spec/manifest-v2-2/)
 //! for more details.
 
+use std::collections::HashMap;
+
 /// The [`ManifestList`] is the "fat manifest" which points
 /// to specific image manifests for one or more platforms.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -63,4 +65,51 @@ pub struct Layer {
     pub media_type: String,
     pub size: usize,
     pub digest: String,
+}
+
+/// Image configuration.
+///
+/// Describes some basic information about the image such as date
+/// created, author, as well as execution/runtime configuration like
+/// entrypoint, default arguments, networking and volumes.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Image {
+    pub architecture: String,
+    pub os: String,
+    pub created: Option<String>,
+    pub author: Option<String>,
+    pub config: Option<ImageConfig>,
+    pub rootfs: RootFS,
+    pub history: Option<Vec<LayerHistory>>,
+}
+
+/// Image execution default parameters.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct ImageConfig {
+    pub user: Option<String>,
+    pub exposed_ports: Option<HashMap<String, serde_json::Value>>,
+    pub env: Option<Vec<String>>,
+    pub entrypoint: Option<Vec<String>>,
+    pub cmd: Option<Vec<String>>,
+    pub volumes: Option<HashMap<String, serde_json::Value>>,
+    pub labels: Option<HashMap<String, String>>,
+    pub stop_signal: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct RootFS {
+    pub r#type: String,
+    diff_ids: Vec<String>,
+}
+
+/// Describe the history of a layer.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct LayerHistory {
+    pub created: Option<String>,
+    pub author: Option<String>,
+    pub created_by: Option<String>,
+    pub comment: Option<String>,
+    pub empty_layer: Option<bool>,
 }

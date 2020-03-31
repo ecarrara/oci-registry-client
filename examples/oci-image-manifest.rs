@@ -24,13 +24,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     match client.manifest(&image, &reference).await {
-        Ok(manifest) => match serde_json::to_string(&manifest) {
-            Ok(repr) => println!("{}", repr),
-            Err(err) => {
-                eprintln!("failed to parse json; err={}", err);
-                std::process::exit(-1);
+        Ok(manifest) => {
+            match serde_json::to_string(&manifest) {
+                Ok(repr) => println!("{}", repr),
+                Err(err) => {
+                    eprintln!("failed to parse manifest json; err={}", err);
+                    std::process::exit(-1);
+                }
             }
-        },
+
+            match client.config(&image, &manifest.config.digest).await {
+                Ok(config) => match serde_json::to_string(&config) {
+                    Ok(repr) => println!("{}", repr),
+                    Err(err) => {
+                        eprintln!("failed to parse image config json; err={}", err);
+                        std::process::exit(-1);
+                    }
+                },
+                Err(err) => {
+                    eprintln!("failed to get image config; err={}", err);
+                    std::process::exit(-1);
+                }
+            }
+        }
         Err(err) => {
             eprintln!("failed to get manifest; err={}", err);
             std::process::exit(-1);
