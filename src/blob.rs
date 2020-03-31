@@ -16,12 +16,16 @@
 use crate::errors::ErrorResponse;
 use bytes::Bytes;
 use reqwest;
+#[cfg(feature = "sha256")]
+use sha2::{Digest, Sha256};
 
 /// Blob represents a downloaded content in a Image Registry.
 pub struct Blob {
     response: reqwest::Response,
     len: Option<usize>,
     content_type: Option<String>,
+    #[cfg(feature = "sha256")]
+    hasher: Sha256,
 }
 
 impl Blob {
@@ -39,10 +43,20 @@ impl Blob {
     /// Stream a chunk of the blob contents.
     pub async fn chunk(&mut self) -> Result<Option<Bytes>, ErrorResponse> {
         match self.response.chunk().await {
-            Ok(Some(chunk)) => Ok(Some(chunk)),
+            Ok(Some(chunk)) => {
+                #[cfg(feature = "sha256")]
+                self.hasher.input(&chunk);
+                Ok(Some(chunk))
+            }
             Ok(None) => Ok(None),
             Err(err) => Err(ErrorResponse::RequestError(err)),
         }
+    }
+
+    /// Returns the sha256 hash of the downloaded content.
+    #[cfg(feature = "sha256")]
+    pub fn digest(self) -> String {
+        format!("sha256:{:x}", self.hasher.result()).to_string()
     }
 }
 
@@ -58,6 +72,7 @@ impl From<reqwest::Response> for Blob {
             len,
             content_type,
             response,
+            hasher: Sha256::new(),
         }
     }
 }
