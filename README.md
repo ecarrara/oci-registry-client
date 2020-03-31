@@ -1,6 +1,10 @@
 OCI Registry Client
 ===================
 
+[![crates.io](https://img.shields.io/crates/v/oci-registry-client.svg)](https://crates.io/crates/oci-registry-client)
+[![Documentation](https://docs.rs/oci-registry-client/badge.svg)](https://docs.rs/oci-registry-client)
+[![MIT](https://img.shields.io/github/license/ecarrara/oci-registry-client)](./LICENSE)
+
 A async client for [OCI compliant image registries](http://github.com/opencontainers/distribution-spec/blob/master/spec.md/)
 and [Docker Registry HTTP V2 protocol](https://docs.docker.com/registry/spec/api/).
 
