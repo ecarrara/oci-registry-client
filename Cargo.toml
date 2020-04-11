@@ -1,6 +1,6 @@
 [package]
 name = "oci-registry-client"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Erle Carrara <carrara.erle@gmail.com>"]
 edition = "2018"
 license = "MIT"
