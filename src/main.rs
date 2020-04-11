@@ -1,4 +1,7 @@
-use oci_registry_client::{manifest::Layer, DockerRegistryClientV2};
+use oci_registry_client::{
+    manifest::{Digest, Layer},
+    DockerRegistryClientV2,
+};
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
@@ -7,14 +10,14 @@ use tokio::sync::mpsc;
 #[derive(Debug)]
 struct DownloadProgressReport {
     n: usize,
-    digest: String,
+    digest: Digest,
     downloaded: usize,
     total: usize,
 }
 
 async fn download_layer(
     n: usize,
-    digest: String,
+    digest: Digest,
     layer: Layer,
     client: DockerRegistryClientV2,
     tx: mpsc::UnboundedSender<DownloadProgressReport>,
@@ -43,9 +46,9 @@ async fn download_layer(
 }
 
 enum LayerDownloadStatus {
-    Unknown(String),
-    Downloading(String, usize, usize),
-    Completed(String),
+    Unknown(Digest),
+    Downloading(Digest, usize, usize),
+    Completed(Digest),
 }
 
 impl LayerDownloadStatus {
@@ -74,7 +77,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for manifest in &manifest_list.manifests {
         println!("{:?}", manifest);
         if manifest.platform.architecture == "amd64" && manifest.platform.os == "linux" {
-            let response = client.manifest("library/alpine", &manifest.digest).await?;
+            let response = client
+                .manifest("library/alpine", &manifest.digest.to_string())
+                .await?;
 
             println!("response: {:?}", response);
         }

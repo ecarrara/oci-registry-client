@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(manifest) => {
             for layer in &manifest.layers {
                 println!("Downloading {} ...", layer.digest);
-                match File::create(Path::new(&out_dir).join(&layer.digest)) {
+                match File::create(Path::new(&out_dir).join(&layer.digest.to_string())) {
                     Ok(mut out_file) => match client.blob(&image, &layer.digest).await {
                         Ok(mut blob) => {
                             loop {

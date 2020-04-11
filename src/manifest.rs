@@ -3,7 +3,9 @@
 //! See [Imag Manifest V2, Schema 2](https://docs.docker.com/registry/spec/manifest-v2-2/)
 //! for more details.
 
-use std::collections::HashMap;
+use serde::{de, ser};
+use sha2::digest::generic_array::{typenum, GenericArray};
+use std::{collections::HashMap, error::Error, fmt, str};
 
 /// The [`ManifestList`] is the "fat manifest" which points
 /// to specific image manifests for one or more platforms.
@@ -21,7 +23,7 @@ pub struct ManifestList {
 pub struct ManifestItem {
     pub media_type: String,
     pub size: usize,
-    pub digest: String,
+    pub digest: Digest,
     pub platform: Platform,
 }
 
@@ -55,7 +57,7 @@ pub struct Manifest {
 pub struct ManifestConfig {
     pub media_type: String,
     pub size: usize,
-    pub digest: String,
+    pub digest: Digest,
 }
 
 /// The [`Layer`] references a [`crate::blob::Blob`] by digest.
@@ -64,7 +66,7 @@ pub struct ManifestConfig {
 pub struct Layer {
     pub media_type: String,
     pub size: usize,
-    pub digest: String,
+    pub digest: Digest,
 }
 
 /// Image configuration.
@@ -94,6 +96,7 @@ pub struct ImageConfig {
     pub entrypoint: Option<Vec<String>>,
     pub cmd: Option<Vec<String>>,
     pub volumes: Option<HashMap<String, serde_json::Value>>,
+    pub working_dir: Option<String>,
     pub labels: Option<HashMap<String, String>>,
     pub stop_signal: Option<String>,
 }
@@ -112,4 +115,72 @@ pub struct LayerHistory {
     pub created_by: Option<String>,
     pub comment: Option<String>,
     pub empty_layer: Option<bool>,
+}
+
+/// Content identifier.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Digest {
+    pub algorithm: String,
+    pub hash: String,
+}
+
+impl Digest {
+    pub fn from_sha256(hash: GenericArray<u8, typenum::U32>) -> Self {
+        Self {
+            algorithm: "sha256".to_owned(),
+            hash: format!("{:x}", hash).to_owned(),
+        }
+    }
+}
+
+impl fmt::Display for Digest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", &self.algorithm, &self.hash)
+    }
+}
+
+impl str::FromStr for Digest {
+    type Err = ParseDigestError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split_it = s.splitn(2, ':');
+        let algorithm = split_it.next().ok_or(ParseDigestError)?;
+        let hash = split_it.next().ok_or(ParseDigestError)?;
+
+        Ok(Digest {
+            algorithm: algorithm.to_owned(),
+            hash: hash.to_owned(),
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ParseDigestError;
+
+impl fmt::Display for ParseDigestError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "invalid digest format")
+    }
+}
+
+impl Error for ParseDigestError {}
+
+impl<'de> de::Deserialize<'de> for Digest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(de::Error::custom)
+    }
+}
+
+impl ser::Serialize for Digest {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        let val = format!("{}:{}", &self.hash, &self.algorithm);
+        serializer.serialize_str(val.as_str())
+    }
 }

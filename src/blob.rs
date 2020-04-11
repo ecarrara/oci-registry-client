@@ -14,10 +14,11 @@
 //! ```
 
 use crate::errors::ErrorResponse;
+use crate::manifest::Digest;
 use bytes::Bytes;
 use reqwest;
 #[cfg(feature = "sha256")]
-use sha2::{Digest, Sha256};
+use sha2::{Digest as Sha256Digest, Sha256};
 
 /// Blob represents a downloaded content in a Image Registry.
 pub struct Blob {
@@ -55,8 +56,8 @@ impl Blob {
 
     /// Returns the sha256 hash of the downloaded content.
     #[cfg(feature = "sha256")]
-    pub fn digest(self) -> String {
-        format!("sha256:{:x}", self.hasher.result()).to_string()
+    pub fn digest(self) -> Digest {
+        Digest::from_sha256(self.hasher.result())
     }
 }
 

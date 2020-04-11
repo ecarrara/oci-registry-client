@@ -23,7 +23,7 @@
 //! println!("{:?}", manifest);
 //!
 //! for layer in &manifest.layers {
-//!    let mut out_file = File::create(Path::new("/tmp/").join(&layer.digest))?;
+//!    let mut out_file = File::create(Path::new("/tmp/").join(&layer.digest.to_string()))?;
 //!    let mut blob = client.blob("library/ubuntu", &layer.digest).await?;
 //!
 //!    while let Some(chunk) = blob.chunk().await? {
@@ -41,7 +41,7 @@ pub mod manifest;
 
 use blob::Blob;
 use errors::{ErrorList, ErrorResponse};
-use manifest::{Image, Manifest, ManifestList};
+use manifest::{Digest, Image, Manifest, ManifestList};
 use reqwest::{Method, StatusCode};
 
 static USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -162,14 +162,14 @@ impl DockerRegistryClientV2 {
     }
 
     /// Get the container config.
-    pub async fn config(&self, image: &str, reference: &str) -> Result<Image, ErrorResponse> {
+    pub async fn config(&self, image: &str, reference: &Digest) -> Result<Image, ErrorResponse> {
         let url = format!("{}/v2/{}/blobs/{}", &self.api_url, image, reference);
         self.request(Method::GET, &url, MEDIA_TYPE_IMAGE_CONFIG)
             .await
     }
 
     /// Retrieve the blob from the registry identified by `digest`.
-    pub async fn blob(&self, image: &str, digest: &str) -> Result<Blob, ErrorResponse> {
+    pub async fn blob(&self, image: &str, digest: &Digest) -> Result<Blob, ErrorResponse> {
         let url = format!("{}/v2/{}/blobs/{}", &self.api_url, image, digest);
         let mut request = self.client.get(&url);
         if let Some(token) = self.auth_token.clone() {
