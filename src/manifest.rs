@@ -128,7 +128,7 @@ impl Digest {
     pub fn from_sha256(hash: GenericArray<u8, typenum::U32>) -> Self {
         Self {
             algorithm: "sha256".to_owned(),
-            hash: format!("{:x}", hash).to_owned(),
+            hash: format!("{:x}", hash),
         }
     }
 }

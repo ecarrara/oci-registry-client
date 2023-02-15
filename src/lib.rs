@@ -209,6 +209,7 @@ impl DockerRegistryClientV2 {
 }
 
 /// OAuth 2.0 token.
+#[allow(dead_code)]
 #[derive(serde::Deserialize, Clone, Debug)]
 pub struct AuthToken {
     access_token: String,
