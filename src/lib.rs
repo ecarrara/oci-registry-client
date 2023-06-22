@@ -63,7 +63,7 @@ pub struct DockerRegistryClientV2 {
 #[serde(rename_all = "camelCase")]
 pub struct Version {}
 
-const MEDIA_TYPE_JSON: &str = "applicatin/json";
+const MEDIA_TYPE_JSON: &str = "application/json";
 const MEDIA_TYPE_MANIFEST_LIST_V2: &str =
     "application/vnd.docker.distribution.manifest.list.v2+json";
 const MEDIA_TYPE_MANIFEST_V2: &str = "application/vnd.docker.distribution.manifest.v2+json";
