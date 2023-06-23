@@ -12,6 +12,7 @@ pub struct ErrorList {
 /// An error.
 ///
 /// Represents an error returned by Image Registry API.
+#[allow(dead_code)]
 #[derive(serde::Deserialize, Debug)]
 pub struct Error {
     code: String,
@@ -20,6 +21,7 @@ pub struct Error {
 }
 
 /// Details about an error.
+#[allow(dead_code)]
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub struct ErrorDetail {

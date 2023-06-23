@@ -31,6 +31,7 @@ pub struct Blob {
 
 impl Blob {
     /// Returns the total length of this blob.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> Option<usize> {
         self.len
     }

@@ -53,10 +53,7 @@ enum LayerDownloadStatus {
 
 impl LayerDownloadStatus {
     pub fn completed(&self) -> bool {
-        match self {
-            LayerDownloadStatus::Completed(_) => true,
-            _ => false,
-        }
+        matches!(self, LayerDownloadStatus::Completed(_))
     }
 }
 
