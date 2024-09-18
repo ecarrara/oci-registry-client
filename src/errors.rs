@@ -17,6 +17,7 @@ pub struct ErrorList {
 pub struct Error {
     code: String,
     message: String,
+    #[serde(default)]
     detail: serde_json::Value,
 }
 
