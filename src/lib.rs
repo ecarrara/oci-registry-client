@@ -41,7 +41,7 @@ pub mod manifest;
 
 use blob::Blob;
 use errors::{ErrorList, ErrorResponse};
-use manifest::{Digest, Image, Manifest, ManifestList};
+use manifest::{Digest, Image, Manifest, ManifestItem, ManifestList, Platform};
 use reqwest::{Method, StatusCode};
 
 static USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -64,10 +64,18 @@ pub struct DockerRegistryClientV2 {
 pub struct Version {}
 
 const MEDIA_TYPE_JSON: &str = "application/json";
-const MEDIA_TYPE_MANIFEST_LIST_V2: &str =
-    "application/vnd.docker.distribution.manifest.list.v2+json";
-const MEDIA_TYPE_MANIFEST_V2: &str = "application/vnd.docker.distribution.manifest.v2+json";
-const MEDIA_TYPE_IMAGE_CONFIG: &str = "application/vnd.docker.container.image.v1+json";
+const ACCEPT_MANIFEST_LIST: &str = concat!(
+    "application/vnd.docker.distribution.manifest.list.v2+json, ",
+    "application/vnd.oci.image.index.v1+json"
+);
+const ACCEPT_MANIFEST: &str = concat!(
+    "application/vnd.docker.distribution.manifest.v2+json, ",
+    "application/vnd.oci.image.manifest.v1+json"
+);
+const ACCEPT_IMAGE_CONFIG: &str = concat!(
+    "application/vnd.docker.container.image.v1+json, ",
+    "application/vnd.oci.image.config.v1+json"
+);
 
 impl DockerRegistryClientV2 {
     /// Returns a new `DockerRegistryClientV2`.
@@ -150,22 +158,56 @@ impl DockerRegistryClientV2 {
         reference: &str,
     ) -> Result<ManifestList, ErrorResponse> {
         let url = format!("{}/v2/{}/manifests/{}", &self.api_url, image, reference);
-        self.request(Method::GET, &url, MEDIA_TYPE_MANIFEST_LIST_V2)
-            .await
+        match self.request(Method::GET, &url, ACCEPT_MANIFEST_LIST).await {
+            Ok(list) => Ok(list),
+            Err(ErrorResponse::RequestError(err)) if err.is_decode() => {
+                let manifest: Manifest = self.request(Method::GET, &url, ACCEPT_MANIFEST).await?;
+                let (manifest_digest, manifest_size, manifest_media_type) = self
+                    .head_manifest_descriptor(image, reference, ACCEPT_MANIFEST)
+                    .await?;
+                let image_config = self.config(image, &manifest.config.digest).await?;
+                let platform = Platform {
+                    architecture: image_config.architecture,
+                    os: image_config.os,
+                    os_version: None,
+                    os_features: None,
+                    variant: None,
+                    features: None,
+                };
+                let fallback_digest = manifest.config.digest.clone();
+                let digest = manifest_digest
+                    .or_else(|| reference.parse::<Digest>().ok())
+                    .unwrap_or(fallback_digest);
+                let media_type = if manifest.media_type.is_empty() {
+                    manifest_media_type.unwrap_or_default()
+                } else {
+                    manifest.media_type.clone()
+                };
+                Ok(ManifestList {
+                    schema_version: manifest.schema_version,
+                    media_type: media_type.clone(),
+                    manifests: vec![ManifestItem {
+                        media_type,
+                        size: manifest_size.unwrap_or(0),
+                        digest,
+                        platform,
+                    }],
+                })
+            }
+            Err(err) => Err(err),
+        }
     }
 
     /// Get the image manifest.
     pub async fn manifest(&self, image: &str, reference: &str) -> Result<Manifest, ErrorResponse> {
         let url = format!("{}/v2/{}/manifests/{}", &self.api_url, image, reference);
-        self.request(Method::GET, &url, MEDIA_TYPE_MANIFEST_V2)
-            .await
+        self.request(Method::GET, &url, ACCEPT_MANIFEST).await
     }
 
     /// Get the container config.
     pub async fn config(&self, image: &str, reference: &Digest) -> Result<Image, ErrorResponse> {
         let url = format!("{}/v2/{}/blobs/{}", &self.api_url, image, reference);
-        self.request(Method::GET, &url, MEDIA_TYPE_IMAGE_CONFIG)
-            .await
+        self.request(Method::GET, &url, ACCEPT_IMAGE_CONFIG).await
     }
 
     /// Retrieve the blob from the registry identified by `digest`.
@@ -203,6 +245,43 @@ impl DockerRegistryClientV2 {
 
         match response.status() {
             StatusCode::OK => Ok(response.json::<T>().await?),
+            _ => Err(ErrorResponse::APIError(response.json::<ErrorList>().await?)),
+        }
+    }
+
+    async fn head_manifest_descriptor(
+        &self,
+        image: &str,
+        reference: &str,
+        accept: &str,
+    ) -> Result<(Option<Digest>, Option<usize>, Option<String>), ErrorResponse> {
+        let url = format!("{}/v2/{}/manifests/{}", &self.api_url, image, reference);
+        let mut request = self
+            .client
+            .head(&url)
+            .header(reqwest::header::ACCEPT, accept);
+
+        if let Some(token) = self.auth_token.clone() {
+            request = request.bearer_auth(token.access_token);
+        }
+
+        let response = request.send().await?;
+
+        match response.status() {
+            StatusCode::OK => {
+                let digest = response
+                    .headers()
+                    .get("Docker-Content-Digest")
+                    .and_then(|value| value.to_str().ok())
+                    .and_then(|value| value.parse::<Digest>().ok());
+                let size = response.content_length().map(|value| value as usize);
+                let content_type = response
+                    .headers()
+                    .get(reqwest::header::CONTENT_TYPE)
+                    .and_then(|value| value.to_str().ok())
+                    .map(|value| value.to_string());
+                Ok((digest, size, content_type))
+            }
             _ => Err(ErrorResponse::APIError(response.json::<ErrorList>().await?)),
         }
     }

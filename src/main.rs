@@ -1,10 +1,9 @@
-use oci_registry_client::{
-    manifest::{Digest, Layer},
-    DockerRegistryClientV2,
-};
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
+
+use oci_registry_client::manifest::{Digest, Layer};
+use oci_registry_client::DockerRegistryClientV2;
 use tokio::sync::mpsc;
 
 #[derive(Debug)]

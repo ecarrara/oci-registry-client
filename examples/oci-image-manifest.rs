@@ -1,7 +1,8 @@
-use oci_registry_client::DockerRegistryClientV2;
-use serde_json;
 use std::env;
 use std::error::Error;
+
+use oci_registry_client::DockerRegistryClientV2;
+use serde_json;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

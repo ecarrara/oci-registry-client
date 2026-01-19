@@ -3,9 +3,12 @@
 //! See [Imag Manifest V2, Schema 2](https://docs.docker.com/registry/spec/manifest-v2-2/)
 //! for more details.
 
+use std::collections::HashMap;
+use std::error::Error;
+use std::{fmt, str};
+
 use serde::{de, ser};
 use sha2::digest::generic_array::{typenum, GenericArray};
-use std::{collections::HashMap, error::Error, fmt, str};
 
 /// The [`ManifestList`] is the "fat manifest" which points
 /// to specific image manifests for one or more platforms.
@@ -13,6 +16,7 @@ use std::{collections::HashMap, error::Error, fmt, str};
 #[serde(rename_all = "camelCase")]
 pub struct ManifestList {
     pub schema_version: i32,
+    #[serde(default)]
     pub media_type: String,
     pub manifests: Vec<ManifestItem>,
 }
@@ -21,6 +25,7 @@ pub struct ManifestList {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestItem {
+    #[serde(default)]
     pub media_type: String,
     pub size: usize,
     pub digest: Digest,
@@ -46,6 +51,7 @@ pub struct Platform {
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     pub schema_version: i32,
+    #[serde(default)]
     pub media_type: String,
     pub config: ManifestConfig,
     pub layers: Vec<Layer>,
@@ -55,6 +61,7 @@ pub struct Manifest {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestConfig {
+    #[serde(default)]
     pub media_type: String,
     pub size: usize,
     pub digest: Digest,
@@ -64,6 +71,7 @@ pub struct ManifestConfig {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Layer {
+    #[serde(default)]
     pub media_type: String,
     pub size: usize,
     pub digest: Digest,
