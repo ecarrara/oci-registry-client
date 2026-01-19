@@ -1,5 +1,10 @@
+use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+
 use oci_registry_client::DockerRegistryClientV2;
-use std::{env, error::Error, fs::File, io::Write, path::Path};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
